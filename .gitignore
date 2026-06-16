@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# build output
+dist/
+**/dist/
+.angular/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+.azure-secrets.local
+
+# transformers.js model cache
+.cache/
+**/.cache/
+backend/models/
+
+# logs / os
+*.log
+.DS_Store
+Thumbs.db
+
+# uploads (local dev)
+backend/uploads/
+
+# test / coverage
+coverage/
+**/coverage/
+playwright-report/
+test-results/

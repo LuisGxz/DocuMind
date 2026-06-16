@@ -1,0 +1,24 @@
+# DocuMind — Estado de fases
+
+> Leer este archivo al iniciar sesión de trabajo. Detalle de cada fase en REQUIREMENTS.md.
+> Vara de calidad: **FinPulse** (NO NEGOCIABLE — ver PORTFOLIO_PROJECTS.md §2 "Quality gate"). El proyecto N ≥ N-1 en pulido.
+
+| Fase | Alcance | Estado |
+|------|---------|--------|
+| F1 | Fundaciones backend (NestJS, Prisma + Neon/pgvector + migración, docker Postgres, config, health, embeddings ONNX, pipeline de ingesta, seed corpus, tests dominio) | ✅ |
+| F2 | Auth (JWT + refresh + lockout + RBAC Owner/Viewer), workspaces/membresía, usuarios+workspace demo seed | ⬜ |
+| F3 | Documentos API (biblioteca, detalle, upload + procesamiento async con estado/progreso, resumen, delete/reprocesar Owner) | ⬜ |
+| F4 | RAG chat (retrieval pgvector, AnswerGenerator extractivo + Claude listo, citas, SSE streaming, conversaciones, sugeridas) | ⬜ |
+| F5 | Frontend base (Angular 20 scaffold, design system DocuMind, i18n EN/ES, auth UI, shell, interceptores, ApiService) | ⬜ |
+| F6 | Frontend features (biblioteca, upload+progreso, split-view visor+chat streaming con citas, conversaciones, resumen, demo guiada completa) | ⬜ |
+| F7 | Pulido y entrega (/about bilingüe, TECHNICAL, README, CI, deploy Neon+Azure+Pages, E2E prod, card portfolio) | ⬜ |
+
+## Log
+- 2026-06-15 · **F1 ✅** Fundaciones backend. **NestJS** (Node 24, TS estricto) + config tipada/validada (`AppConfig`, falla rápido si falta env). **Prisma 6** (downgrade desde 7 por el cambio de `prisma.config.ts`) + **Postgres/pgvector** (docker `pgvector/pgvector:pg17`, puerto 5434) — migración `init` con columna `vector(384)` e **índice HNSW** `vector_cosine_ops` inyectado a mano en el SQL. Modelo: User/RefreshToken/Workspace/Membership(Owner|Viewer)/Document(status+progreso)/DocumentChunk(embedding)/Conversation/ChatMessage. **EmbeddingService** ONNX local `Xenova/all-MiniLM-L6-v2` (384d, normalizado, singleton lazy). **Pipeline de ingesta** (`IngestionService`: extract→chunk→embed→store con estado/progreso; extractores PDF vía pdf-parse v2 per-page + texto/markdown con page-breaks `\f`; chunker con solape preservando página; insert de embeddings por **SQL crudo** `$n::vector`/`::uuid`). **Seed**: workspace "Legal & Contracts" + usuarios demo **owner@documind.dev/Owner1234!** y **viewer@documind.dev/Viewer1234!** + corpus realista (MSA, DPA, NDA, SaaS terms, IP assignment, employment) = **6 docs / 16 págs / 16 chunks**. `/health` (db + modo LLM). **Retrieval pgvector verificado** (la cláusula de terminación sale primera ante "end the contract early"). Tests: chunker (6) + cosine (4) + e2e `/health` (1). Build+lint+tests verdes. **Trampas resueltas**: Prisma 7 `url` deprecado→downgrade a 6; `tsx` no emite `emitDecoratorMetadata`→NestJS DI `undefined`, seed corre **compilado** (`nest build && node dist/...`); `.env` no autocargado en tsx/nest→`dotenv/config`; jest rompe el realm de `Float32Array` de onnxruntime→test del modelo movido al camino real (seed/retrieval).
+- 2026-06-15 · Repo creado. REQUIREMENTS.md + arquitectura definidos. Decisiones: LLM extractivo determinista por defecto con adapter Claude listo (sin key); embeddings locales ONNX all-MiniLM (384d); pgvector en Neon; Prisma + SQL crudo para vectores; visor de texto extraído. Stack: Angular 20 + NestJS + Postgres/pgvector.
+
+## Cómo correr (dev)
+- DB: `docker compose up -d` (Postgres 17 + pgvector) o apuntar `DATABASE_URL` a Neon.
+- Backend: `cd backend && npm install && npx prisma migrate dev && npm run seed && npm run start:dev` (http://localhost:3000).
+- Demo (desde F2): se definirán cuentas Owner/Viewer en el seed.
+- Modo LLM: sin `ANTHROPIC_API_KEY` → generador extractivo determinista. Con key → Claude real (claude-opus-4-8 / claude-haiku-4-5).
