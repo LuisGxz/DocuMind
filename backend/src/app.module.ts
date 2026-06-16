@@ -8,6 +8,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     HealthModule,
     AuthModule,
     WorkspacesModule,
+    DocumentsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
