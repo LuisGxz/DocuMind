@@ -1,11 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { LanguageService } from '../../core/language.service';
 import { parseApiError } from '../../core/api-error';
 import { STATUS_BADGE } from '../../core/i18n';
-import { DocumentSummaryDto, FileKind, WorkspaceSummary } from '../../core/models';
+import { WorkspaceStore } from '../../core/workspace.store';
+import { DocumentSummaryDto, FileKind } from '../../core/models';
 import { IconComponent } from '../../shared/icon.component';
+import { UploadDialogComponent } from './upload-dialog.component';
 
 const FILE_ICON: Record<FileKind, string> = {
   pdf: 'file-text',
@@ -17,7 +20,7 @@ const FILE_ICON: Record<FileKind, string> = {
 
 @Component({
   selector: 'dm-library',
-  imports: [IconComponent],
+  imports: [RouterLink, IconComponent, UploadDialogComponent],
   template: `
     <div class="container page">
       @if (loading()) {
@@ -49,23 +52,47 @@ const FILE_ICON: Record<FileKind, string> = {
               {{ ws.indexedPageCount }} {{ t().library.pageCount }}
             </p>
           </div>
+          @if (isOwner()) {
+            <button class="btn btn-primary" (click)="uploadOpen.set(true)">
+              <dm-icon name="upload" [size]="16" /> {{ t().library.upload }}
+            </button>
+          }
         </header>
+
+        <!-- how to explore (role-aware, cross-role first) -->
+        <div class="explore">
+          <div class="explore-main">
+            <span class="explore-mark ai-grad"><dm-icon name="help-circle" [size]="16" /></span>
+            <div>
+              <p class="explore-title">{{ t().demo.crossRoleTitle }}</p>
+              <p class="explore-body">{{ t().demo.crossRole }}</p>
+            </div>
+          </div>
+          <p class="explore-can">
+            <dm-icon name="check" [size]="14" />
+            {{ isOwner() ? t().demo.canOwner : t().demo.canViewer }}
+          </p>
+        </div>
 
         @if (documents().length === 0) {
           <div class="state empty">
             <span class="empty-mark ai-grad"><dm-icon name="file-stack" [size]="26" /></span>
             <h3>{{ t().library.empty }}</h3>
-            <p>{{ t().library.emptyHint }}</p>
+            <p>{{ isOwner() ? t().library.emptyHint : t().library.viewerNoUpload }}</p>
           </div>
         } @else {
           <div class="grid">
             @for (doc of documents(); track doc.id) {
-              <article class="card dcard" [class.hot]="doc.conversationCount > 0">
+              <a
+                class="card dcard"
+                [class.hot]="doc.conversationCount > 0"
+                [routerLink]="['/d', doc.id]"
+              >
                 <div class="doc-top">
                   <span class="ficon" [class.hot]="doc.conversationCount > 0">
                     <dm-icon [name]="fileIcon(doc.fileKind)" [size]="18" />
                   </span>
-                  <span class="badge" [class]="statusBadge(doc.status)">{{ lang.status(doc.status) }}</span>
+                  <span class="badge" [class]="statusBadge(doc)">{{ lang.status(doc.status) }}</span>
                 </div>
                 <p class="name" [title]="doc.filename">{{ doc.filename }}</p>
                 <p class="meta num">
@@ -78,12 +105,20 @@ const FILE_ICON: Record<FileKind, string> = {
                   </span>
                   <span class="by">{{ t().library.uploadedBy }} {{ doc.uploadedByName }}</span>
                 </div>
-              </article>
+              </a>
             }
           </div>
         }
       }
     </div>
+
+    @if (uploadOpen() && workspace(); as ws) {
+      <dm-upload-dialog
+        [slug]="ws.slug"
+        (close)="uploadOpen.set(false)"
+        (uploaded)="onUploaded()"
+      />
+    }
   `,
   styles: `
     .page {
@@ -94,7 +129,7 @@ const FILE_ICON: Record<FileKind, string> = {
       align-items: flex-end;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       flex-wrap: wrap;
     }
     .head h1 {
@@ -107,6 +142,55 @@ const FILE_ICON: Record<FileKind, string> = {
     }
     .head-skel {
       margin-bottom: 1.5rem;
+    }
+
+    .explore {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1.5rem;
+      background: var(--aiblue-50);
+      border: 1px solid var(--aiblue-100);
+      border-radius: var(--radius-lg);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .explore-main {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 16rem;
+    }
+    .explore-mark {
+      width: 1.9rem;
+      height: 1.9rem;
+      display: grid;
+      place-items: center;
+      border-radius: 0.6rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .explore-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+    .explore-body {
+      font-size: 0.82rem;
+      color: var(--ink-700);
+      margin-top: 0.15rem;
+      line-height: 1.5;
+    }
+    .explore-can {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--aiblue-600);
+      white-space: nowrap;
     }
 
     .grid {
@@ -191,7 +275,6 @@ const FILE_ICON: Record<FileKind, string> = {
       padding: 1rem;
     }
 
-    /* ---- states ---- */
     .state {
       display: flex;
       flex-direction: column;
@@ -223,11 +306,15 @@ export class LibraryComponent {
   protected readonly lang = inject(LanguageService);
   protected readonly t = this.lang.t;
   private readonly api = inject(ApiService);
+  private readonly store = inject(WorkspaceStore);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly workspace = signal<WorkspaceSummary | null>(null);
+  protected readonly uploadOpen = signal(false);
   private readonly docs = signal<DocumentSummaryDto[]>([]);
+
+  protected readonly workspace = this.store.primary;
+  protected readonly isOwner = computed(() => this.store.role() === 'Owner');
 
   /** Newest first. */
   protected readonly documents = computed(() =>
@@ -246,12 +333,9 @@ export class LibraryComponent {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const workspaces = await firstValueFrom(this.api.getWorkspaces());
-      const ws = workspaces[0] ?? null;
-      this.workspace.set(ws);
-      if (ws) {
-        this.docs.set(await firstValueFrom(this.api.getDocuments(ws.slug)));
-      }
+      await this.store.ensureLoaded();
+      const ws = this.store.primary();
+      if (ws) this.docs.set(await firstValueFrom(this.api.getDocuments(ws.slug)));
     } catch (err) {
       this.error.set(parseApiError(err, this.t().library.loadError)[0]);
     } finally {
@@ -259,10 +343,17 @@ export class LibraryComponent {
     }
   }
 
+  protected async onUploaded(): Promise<void> {
+    await this.store.refresh();
+    const ws = this.store.primary();
+    if (ws) this.docs.set(await firstValueFrom(this.api.getDocuments(ws.slug)));
+  }
+
   protected fileIcon(kind: FileKind): string {
     return FILE_ICON[kind] ?? 'file';
   }
-  protected statusBadge(status: DocumentSummaryDto['status']): string {
-    return STATUS_BADGE[status];
+  protected statusBadge(status: DocumentSummaryDto['status'] | DocumentSummaryDto): string {
+    const s = typeof status === 'string' ? status : status.status;
+    return STATUS_BADGE[s];
   }
 }

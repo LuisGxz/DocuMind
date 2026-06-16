@@ -1,13 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
+import { DemoService } from '../core/demo.service';
 import { LanguageService } from '../core/language.service';
-import { Role } from '../core/models';
+import { WorkspaceStore } from '../core/workspace.store';
 import { BrandMarkComponent } from '../shared/brand-mark.component';
 import { IconComponent } from '../shared/icon.component';
 import { LangToggleComponent } from '../shared/lang-toggle.component';
+import { TourComponent } from '../shared/tour.component';
 
 @Component({
   selector: 'dm-shell',
@@ -18,6 +18,7 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
     BrandMarkComponent,
     IconComponent,
     LangToggleComponent,
+    TourComponent,
   ],
   template: `
     <header class="header">
@@ -31,21 +32,28 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
         </nav>
 
         <div class="right">
+          <button class="btn btn-subtle icon-btn" (click)="demo.start()" [title]="t().demo.replay">
+            <dm-icon name="help-circle" [size]="18" />
+          </button>
           <dm-lang-toggle />
           @if (auth.user(); as user) {
-            @if (role(); as r) {
+            @if (store.role(); as r) {
               <span
                 class="role-pill"
                 [class.role-owner]="r === 'Owner'"
                 [class.role-viewer]="r === 'Viewer'"
-                [title]="lang.role(r)"
+                [title]="t().demo.badge + ': ' + lang.role(r)"
               >
                 {{ lang.role(r) }}
               </span>
             }
             <div class="user">
               <span class="who">{{ user.fullName }}</span>
-              <button class="btn btn-subtle icon-btn" (click)="signOut()" [title]="t().header.signOut">
+              <button
+                class="btn btn-subtle icon-btn"
+                (click)="signOut()"
+                [title]="t().header.signOut"
+              >
                 <dm-icon name="log-out" [size]="18" />
               </button>
             </div>
@@ -64,6 +72,8 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
         <span class="dim">{{ t().footer.demoNote }}</span>
       </div>
     </footer>
+
+    <dm-tour />
   `,
   styles: `
     :host {
@@ -114,7 +124,10 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
       margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
+    }
+    .icon-btn {
+      padding: 0.4rem;
     }
     .user {
       display: flex;
@@ -126,17 +139,16 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
       font-weight: 600;
       color: var(--ink-700);
     }
-    .icon-btn {
-      padding: 0.4rem;
-    }
     .main {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
     .footer {
       border-top: 1px solid var(--border);
       background: var(--surface);
       padding: 1.25rem 0;
-      margin-top: 2rem;
     }
     .foot {
       display: flex;
@@ -157,7 +169,7 @@ import { LangToggleComponent } from '../shared/lang-toggle.component';
         display: none;
       }
       .right {
-        gap: 0.5rem;
+        gap: 0.45rem;
       }
     }
   `,
@@ -166,25 +178,16 @@ export class ShellComponent {
   protected readonly auth = inject(AuthService);
   protected readonly lang = inject(LanguageService);
   protected readonly t = this.lang.t;
-  private readonly api = inject(ApiService);
+  protected readonly store = inject(WorkspaceStore);
+  protected readonly demo = inject(DemoService);
   private readonly router = inject(Router);
 
-  protected readonly role = signal<Role | null>(null);
-
   constructor() {
-    void this.loadRole();
-  }
-
-  private async loadRole(): Promise<void> {
-    try {
-      const workspaces = await firstValueFrom(this.api.getWorkspaces());
-      this.role.set(workspaces[0]?.role ?? null);
-    } catch {
-      /* role badge is best-effort */
-    }
+    void this.store.ensureLoaded().then(() => this.demo.maybeAutoStart());
   }
 
   protected async signOut(): Promise<void> {
+    this.store.clear();
     await this.auth.logout();
     await this.router.navigate(['/login']);
   }

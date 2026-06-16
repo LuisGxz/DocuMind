@@ -27,6 +27,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/library/library.component').then((m) => m.LibraryComponent),
       },
+      {
+        path: 'd/:id',
+        loadComponent: () =>
+          import('./features/document/document.component').then((m) => m.DocumentComponent),
+      },
     ],
   },
 
