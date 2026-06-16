@@ -1,0 +1,366 @@
+/* ============================================================
+   DocuMind — AI document assistant · design system
+   Tokens mirror docs/portfolio-designs/11-documind.html
+   canvas + ink scale · aiblue→aiviolet gradient · cite #FFF3C4
+   ============================================================ */
+
+:root {
+  --canvas: #f7f8fa;
+  --surface: #ffffff;
+
+  --ink-900: #1a1d26;
+  --ink-700: #3d4252;
+  --ink-500: #646b7e;
+  --ink-400: #8b92a5;
+  --ink-200: #dde0e8;
+  --ink-100: #eceef3;
+
+  --aiblue-600: #3b5bdb;
+  --aiblue-500: #4c6ef5;
+  --aiblue-100: #e7ecfe;
+  --aiblue-50: #f4f6ff;
+  --aiviolet-500: #7048e8;
+  --aiviolet-100: #efeafd;
+  --cite: #fff3c4;
+  --cite-hot: #f5c518;
+
+  --ok: #059669;
+  --ok-soft: rgba(5, 150, 105, 0.12);
+  --warn: #b3792e;
+  --warn-soft: rgba(179, 121, 46, 0.12);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+
+  --bg: var(--canvas);
+  --text: var(--ink-900);
+  --text-dim: var(--ink-500);
+  --border: var(--ink-200);
+  --border-soft: var(--ink-100);
+
+  --grad: linear-gradient(135deg, #4c6ef5, #7048e8);
+  --grad-text: linear-gradient(95deg, #3b5bdb, #7048e8);
+
+  --radius-xl: 1.25rem;
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(26, 29, 38, 0.06);
+  --shadow-md: 0 8px 28px rgba(26, 29, 38, 0.1);
+  --shadow-pop: 0 12px 40px rgba(26, 29, 38, 0.16);
+
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-doc: 'Source Serif 4', Georgia, serif;
+
+  --maxw: 80rem;
+  --header-h: 3.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+}
+p {
+  margin: 0;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: inherit;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.doc {
+  font-family: var(--font-doc);
+}
+.mono {
+  font-family: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', monospace;
+}
+
+::selection {
+  background: var(--aiblue-100);
+  color: var(--ink-900);
+}
+:focus-visible {
+  outline: 2px solid var(--aiblue-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- layout ---------- */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ---------- gradient helpers ---------- */
+.ai-grad {
+  background: var(--grad);
+}
+.ai-grad-text {
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 120ms ease,
+    box-shadow 150ms ease;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:not(:disabled):hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-700);
+}
+.btn-ghost:not(:disabled):hover {
+  border-color: var(--aiblue-500);
+  color: var(--aiblue-600);
+}
+.btn-subtle {
+  background: transparent;
+  color: var(--ink-500);
+}
+.btn-subtle:not(:disabled):hover {
+  background: var(--ink-100);
+  color: var(--ink-900);
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ---------- form fields ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+.input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink-900);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.input::placeholder {
+  color: var(--ink-400);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--aiblue-500);
+  box-shadow: 0 0 0 3px var(--aiblue-50);
+}
+.input.invalid {
+  border-color: var(--danger);
+}
+.field-error {
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+/* ---------- cards / surfaces ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- badges ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-pill);
+  line-height: 1.4;
+}
+.badge-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.badge-neutral {
+  background: var(--ink-100);
+  color: var(--ink-500);
+}
+.badge-ai {
+  background: var(--aiviolet-100);
+  color: var(--aiviolet-500);
+}
+
+/* ---------- role pill ---------- */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.22rem 0.6rem;
+  border-radius: var(--radius-pill);
+}
+.role-owner {
+  background: var(--aiblue-100);
+  color: var(--aiblue-600);
+}
+.role-viewer {
+  background: var(--ink-100);
+  color: var(--ink-500);
+}
+
+/* ---------- alerts ---------- */
+.alert {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+}
+.alert-danger {
+  background: var(--danger-soft);
+  color: #991b1b;
+}
+
+/* ---------- caret (typing) ---------- */
+.caret {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  background: var(--aiblue-600);
+  vertical-align: -2px;
+  margin-left: 1px;
+  animation: blink 1s step-start infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---------- spinner ---------- */
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- skeleton shimmer ---------- */
+.skeleton {
+  background: linear-gradient(90deg, var(--ink-100) 25%, var(--ink-200) 37%, var(--ink-100) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .caret {
+    animation: none;
+  }
+}
