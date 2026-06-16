@@ -10,11 +10,11 @@
 - [ ] **Embeddings ONNX en free-tier (F1)**: precomputar embeddings del seed o cachear el modelo en el build para no castigar el cold start de App Service F1.
 
 ## LLM
-- [ ] **Wirear el adapter Claude real** (`@anthropic-ai/sdk`, claude-opus-4-8 / claude-haiku-4-5, streaming) detrás de `AnswerGenerator`; activarlo solo si `ANTHROPIC_API_KEY` está presente. Por defecto sigue el extractivo determinista (F4 construye ambos).
+- [x] **Adapter Claude real wired (F4)** — `ClaudeAnswerGenerator` (`@anthropic-ai/sdk` v0.104, `claude-opus-4-8` configurable vía `ANTHROPIC_MODEL`, `messages.stream` + `thinking:adaptive`, summary vía `output_config.format`). Se activa solo si `ANTHROPIC_API_KEY` está presente; default = extractivo determinista. **Falta**: probarlo en vivo con una key real (el demo corre extractivo a propósito).
 
 ## Documentos (F3 — diferido dentro de la fase)
 - [ ] **Persistir el archivo original** (bytea / blob store) para: (a) re-extracción fiel en *reprocess* y (b) botón de **descarga** del documento. Por ahora el visor y el reprocess reconstruyen el texto desde los chunks (suficiente para el demo, pero no es el binario original).
-- [ ] **Resumen automático del documento** (RF-07): se genera en F4 con `AnswerGenerator` (extractivo/Claude). En F3 el campo `summary` queda nulo hasta entonces.
+- [x] **Resumen automático del documento (RF-07)** — hecho en F4: `IngestionService` llama `AnswerGenerator.summarize()` tras indexar (best-effort). Extractivo = TextRank-lite (`summaryEs` null); Claude = EN+ES. Verificado: los 6 docs del seed con `summary` poblado.
 - [ ] Probar la ruta de **PDF real** (subir un PDF de verdad): el extractor pdf-parse v2 está implementado pero el seed usa texto; falta un test con un PDF binario.
 
 ## Visor

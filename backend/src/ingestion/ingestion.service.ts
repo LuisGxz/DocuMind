@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../embeddings/embedding.service';
+import { ANSWER_GENERATOR } from '../generation/answer-generator';
+import type { AnswerGenerator } from '../generation/answer-generator';
 import { chunkPages } from './chunker';
 import { extractText } from './extractors/text.extractor';
 import { extractPdf } from './extractors/pdf.extractor';
-import { ExtractedDocument } from './types';
+import { Chunk, ExtractedDocument } from './types';
 
 @Injectable()
 export class IngestionService {
@@ -14,6 +16,7 @@ export class IngestionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddings: EmbeddingService,
+    @Inject(ANSWER_GENERATOR) private readonly generator: AnswerGenerator,
   ) {}
 
   /**
@@ -141,6 +144,8 @@ export class IngestionService {
       this.logger.log(
         `Indexed ${doc.filename}: ${extracted.pageCount} pages, ${chunks.length} chunks`,
       );
+
+      await this.generateSummary(documentId, doc.filename, chunks);
     } catch (err) {
       await this.prisma.document.update({
         where: { id: documentId },
@@ -150,6 +155,31 @@ export class IngestionService {
         },
       });
       throw err;
+    }
+  }
+
+  /**
+   * Generate the document summary (RF-07) via the active AnswerGenerator. Runs
+   * after indexing and is best-effort — a summary failure must not fail ingestion.
+   */
+  private async generateSummary(
+    documentId: string,
+    filename: string,
+    chunks: Chunk[],
+  ): Promise<void> {
+    try {
+      const { summary, summaryEs } = await this.generator.summarize({
+        filename,
+        chunks: chunks.map((c) => ({ page: c.page, content: c.content })),
+      });
+      await this.prisma.document.update({
+        where: { id: documentId },
+        data: { summary: summary || null, summaryEs },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Summary generation failed for document ${documentId}: ${String(err)}`,
+      );
     }
   }
 

@@ -25,6 +25,10 @@ export class AppConfig {
   @IsString()
   anthropicApiKey!: string;
 
+  /** Claude model used when a key is present (answers + summaries). */
+  @IsString()
+  anthropicModel!: string;
+
   @IsInt()
   @Min(1)
   maxUploadMb!: number;
@@ -50,6 +54,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     jwtAccessTtl: env.JWT_ACCESS_TTL ?? '15m',
     jwtRefreshTtl: env.JWT_REFRESH_TTL ?? '7d',
     anthropicApiKey: env.ANTHROPIC_API_KEY ?? '',
+    anthropicModel: env.ANTHROPIC_MODEL ?? 'claude-opus-4-8',
     maxUploadMb: Number(env.MAX_UPLOAD_MB ?? '15'),
     port: Number(env.PORT ?? '3000'),
     corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:4200')
