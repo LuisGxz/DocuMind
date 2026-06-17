@@ -1,0 +1,39 @@
+name: Deploy API to Azure
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Build on Linux so native deps (onnxruntime-node, argon2) match the App Service runtime.
+      - run: npm ci
+      - run: npm run build
+
+      # Ship a production artifact: drop devDeps, then regenerate the Prisma client
+      # (prisma is a prod dep so its CLI survives the prune).
+      - run: npm prune --omit=dev
+      - run: npx prisma generate
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: documind-api-luisgxz
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: backend
