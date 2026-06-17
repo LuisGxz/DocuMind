@@ -26,14 +26,28 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # Bundle the embedding model so production is self-contained (no runtime
+      # HuggingFace download; works on the read-only run-from-package mount).
+      - run: node scripts/fetch-model.mjs
+
       # Ship a production artifact: drop devDeps, then regenerate the Prisma client
       # (prisma is a prod dep so its CLI survives the prune).
       - run: npm prune --omit=dev
       - run: npx prisma generate
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+      # F1 free tier is disk/time constrained — keep only the Linux onnxruntime
+      # binary (drop darwin/win32, ~158 MB) to shrink the deploy package.
+      - run: rm -rf node_modules/onnxruntime-node/bin/napi-v6/darwin node_modules/onnxruntime-node/bin/napi-v6/win32
+
+      # Zip everything the app needs to run from the mounted package.
+      - name: Package
+        run: zip -r -q ../documind-api.zip . -x '*.git*' 'test/*' 'src/*' '*.spec.*'
+
+      - uses: azure/login@v2
         with:
-          app-name: documind-api-luisgxz
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Deploy as run-from-package (WEBSITE_RUN_FROM_PACKAGE=1 on the app): the zip
+      # is mounted, not extracted, which avoids the OneDeploy 504 on the ~850 MB tree.
+      - name: Deploy to Azure Web App
+        run: az webapp deploy --resource-group documind-rg --name documind-api-luisgxz --src-path ../documind-api.zip --type zip --async false

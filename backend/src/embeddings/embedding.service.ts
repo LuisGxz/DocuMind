@@ -1,11 +1,23 @@
+import { join } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  env,
   pipeline,
   type FeatureExtractionPipeline,
 } from '@huggingface/transformers';
 
 export const EMBEDDING_DIMS = 384;
 const MODEL = 'Xenova/all-MiniLM-L6-v2';
+
+// Resolve the model from a bundled `models/` directory shipped with the deploy.
+// This keeps production self-contained: it never reaches out to HuggingFace at
+// runtime (no cold-start download, no network dependency) and works on Azure's
+// read-only run-from-package mount. Locally the directory is populated on first
+// run. `ALLOW_REMOTE_MODELS=false` (set in prod) forces offline, local-only load.
+env.cacheDir = process.env.MODEL_CACHE_DIR ?? join(process.cwd(), 'models');
+if (process.env.ALLOW_REMOTE_MODELS === 'false') {
+  env.allowRemoteModels = false;
+}
 
 /**
  * Local, key-free sentence embeddings via transformers.js (ONNX).
