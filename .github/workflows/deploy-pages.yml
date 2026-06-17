@@ -1,0 +1,61 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  API_BASE: https://documind-api-luisgxz.azurewebsites.net
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build -- --base-href /DocuMind/
+
+      - name: Inject API base + SPA 404 fallback
+        run: |
+          DIST=dist/frontend/browser
+          # Point the SPA at the live API (overrides the localhost default in config.ts).
+          sed -i "s#</head>#<script>window.DOCUMIND_API_BASE='${API_BASE}';</script></head>#" "$DIST/index.html"
+          # GitHub Pages SPA fallback so deep links (/d/:id, /about) resolve.
+          cp "$DIST/index.html" "$DIST/404.html"
+          touch "$DIST/.nojekyll"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist/frontend/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

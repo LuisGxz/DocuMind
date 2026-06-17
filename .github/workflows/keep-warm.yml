@@ -1,0 +1,17 @@
+name: Keep API warm
+
+# Free-tier App Service sleeps when idle; ping /health so the demo stays responsive.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl -fsS --max-time 60 https://documind-api-luisgxz.azurewebsites.net/health \
+            && echo "" && echo "API is warm" \
+            || echo "Ping failed (API may be cold-starting)"

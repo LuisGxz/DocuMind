@@ -69,6 +69,7 @@ import { TourComponent } from '../shared/tour.component';
     <footer class="footer">
       <div class="container foot">
         <span>{{ t().footer.tagline }}</span>
+        <a routerLink="/about" class="foot-link">{{ lang.isEs() ? 'Acerca de' : 'About' }}</a>
         <span class="dim">{{ t().footer.demoNote }}</span>
       </div>
     </footer>
@@ -159,6 +160,13 @@ import { TourComponent } from '../shared/tour.component';
     }
     .foot .dim {
       color: var(--ink-400);
+    }
+    .foot-link {
+      font-weight: 600;
+      color: var(--aiblue-600);
+    }
+    .foot-link:hover {
+      text-decoration: underline;
     }
     @media (max-width: 600px) {
       .bar {

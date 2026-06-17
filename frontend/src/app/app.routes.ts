@@ -14,6 +14,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
+  {
+    path: 'about',
+    loadComponent: () => import('./features/about/about.component').then((m) => m.AboutComponent),
+  },
 
   // App shell (authenticated)
   {
